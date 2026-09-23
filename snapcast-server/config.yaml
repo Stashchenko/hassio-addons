@@ -1,9 +1,9 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Snapcast server
-version: "0.2.1"
+version: "0.0.1"
 slug: snapcast-server
 description: Snapcast server with Spotify connect support
-url: "https://github.com/corneyl/hassio-addons/tree/main/snapcast-server"
+url: "https://github.com/stashchenko/hassio-addons/tree/main/snapcast-server"
 audio: true
 host_network: true
 ingress: true
@@ -13,11 +13,8 @@ privileged:
   - SYS_ADMIN
 init: false
 arch:
-  - armhf
-  - armv7
   - aarch64
   - amd64
-  - i386
 map:
   - share:rw
 ports:
@@ -32,7 +29,7 @@ options:
   streams:
     streams: []
   buffer: 1000
-  codec: flac
+  codec: pcm
   send_to_muted: false
   sampleformat: "48000:16:2"
   spotify_name: "Home Assistant Sound System"
@@ -49,4 +46,4 @@ schema:
   spotify_username: str?
   spotify_password: password?
   log_level: list(trace|debug|info|notice|warning|error|fatal)
-image: "ghcr.io/corneyl/{arch}-snapcast-server"
+image: "ghcr.io/stashchenko/{arch}-snapcast-server"
