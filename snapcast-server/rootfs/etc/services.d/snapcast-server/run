@@ -1,7 +1,6 @@
 #!/usr/bin/with-contenv bashio
 # ==============================================================================
-# Start the example service
-# s6-overlay docs: https://github.com/just-containers/s6-overlay
+# Start Snapserver service
 # ==============================================================================
 
 config=/etc/snapserver.conf
@@ -18,31 +17,31 @@ if bashio::config.has_value "log_level"; then
     bashio::log.level "$(bashio::config 'log_level')"
 fi
 
-bashio::log.debug "Config: $(bashio::addon.config)"
+bashio::log.debug "Config: $(bashio::app.config)"
+
+# ==============================================================================
+# Snapserver configuration
+# ==============================================================================
 
 echo "[stream]" > "${config}"
+
+# Always provide the default silent stream
+echo "source = process:///bin/dd?name=default&sampleformat=$(bashio::config 'sampleformat')&params=if=/dev/zero%20bs=3840" >> "${config}"
+
+# Make the default stream the initial stream for new clients
+echo "default_source = default" >> "${config}"
+
+# User-configured streams
 for stream in $(bashio::config 'streams.streams'); do
-    echo "stream = ${stream}" >> "${config}"
+    echo "source = ${stream}" >> "${config}"
 done
 
-# Add the Spotify source
-device_name=$(bashio::config 'spotify_name')
-spotify_auth=""
-if bashio::config.has_value 'spotify_username'; then
-    bashio::config.require 'spotify_password'
-
-    username=$(bashio::config 'spotify_username')
-    password=$(bashio::config 'spotify_password')
-
-    spotify_auth="&username=${username}&password=${password}"
-fi
-
 {
-    echo "stream = librespot:///usr/bin/librespot?name=Spotify&devicename=${device_name}${spotify_auth}&disable_audio_cache=true"
     echo "buffer = $(bashio::config 'buffer')"
     echo "codec = $(bashio::config 'codec')"
     echo "send_to_muted = $(bashio::config 'send_to_muted')"
     echo "sampleformat = $(bashio::config 'sampleformat')"
+
     echo "[http]"
     echo "doc_root = /usr/share/snapserver/snapweb"
 } >> "${config}"

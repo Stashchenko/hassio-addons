@@ -11,12 +11,5 @@ configuration:
     name: Send to muted clients
   sampleformat:
     name: Sample format
-  spotify_name:
-    name: Spotify device name
-    description: The name of the device as shown in Spotify
-  spotify_username:
-    name: Spotify username
-  spotify_password:
-    name: Spotify password
   log_level:
     name: Log level

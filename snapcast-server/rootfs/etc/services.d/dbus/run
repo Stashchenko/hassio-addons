@@ -6,4 +6,6 @@
 
 bashio::log.info "Starting dbus-daemon..."
 
+mkdir -p /run/dbus
+
 exec dbus-daemon --system --nofork
