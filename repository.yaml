@@ -1,4 +1,4 @@
 # https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
-name: Corneyl's add-on repository
-url: "https://github.com/corneyl/hassio-addons"
-maintainer: Corneyl
+name: Stashchenko's App repository
+url: "https://github.com/stashchenko/hassio-addons"
+maintainer: Stashchenko

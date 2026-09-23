@@ -18,7 +18,7 @@ if bashio::config.has_value "log_level"; then
     bashio::log.level "$(bashio::config 'log_level')"
 fi
 
-bashio::log.debug "Config: $(bashio::addon.config)"
+bashio::log.debug "Config: $(bashio::app.config)"
 
 echo "[stream]" > "${config}"
 for stream in $(bashio::config 'streams.streams'); do
@@ -38,7 +38,7 @@ if bashio::config.has_value 'spotify_username'; then
 fi
 
 {
-    echo "stream = librespot:///usr/bin/librespot?name=Spotify&devicename=${device_name}${spotify_auth}&disable_audio_cache=true"
+    echo "stream = librespot:///usr/bin/librespot?name=default&devicename=${device_name}${spotify_auth}&disable_audio_cache=true"
     echo "buffer = $(bashio::config 'buffer')"
     echo "codec = $(bashio::config 'codec')"
     echo "send_to_muted = $(bashio::config 'send_to_muted')"
