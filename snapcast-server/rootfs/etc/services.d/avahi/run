@@ -8,6 +8,19 @@ until [ -e /var/run/dbus/system_bus_socket ]; do
   sleep 1s
 done
 
+# Restrict the interfaces avahi advertises on, if the user configured a list.
+# Empty list keeps the default behaviour (advertise on every host interface).
+if bashio::config.has_value 'advertise_interfaces'; then
+    ifaces=""
+    for iface in $(bashio::config 'advertise_interfaces'); do
+        ifaces="${ifaces:+${ifaces},}${iface}"
+    done
+    if [ -n "${ifaces}" ]; then
+        bashio::log.info "Restricting avahi to interfaces: ${ifaces}"
+        sed -i "/^\[server\]/a allow-interfaces=${ifaces}" /etc/avahi/avahi-daemon.conf
+    fi
+fi
+
 bashio::log.info "Starting avahi-daemon..."
 
 avahi-daemon --no-drop-root -f /etc/avahi/avahi-daemon.conf

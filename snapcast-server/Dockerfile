@@ -17,14 +17,17 @@ RUN \
     \
     && apk add --no-cache \
         snapcast \
-        --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-        --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
+        --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+        --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
     \
     && mkdir -p /usr/share/snapserver/snapweb \
     && curl -J -L https://github.com/badaix/snapweb/releases/download/v0.9.3/snapweb.zip -o /tmp/snapweb.zip \
     && unzip -o /tmp/snapweb.zip -d /usr/share/snapserver/snapweb \
     && rm /tmp/snapweb.zip \
-    && rm -fr /tmp/*
+    && rm -f \
+            /etc/avahi/services/ssh.service \
+            /etc/avahi/services/sftp-ssh.service \
+    && rm -rf /tmp/*
 
 COPY rootfs /
 
