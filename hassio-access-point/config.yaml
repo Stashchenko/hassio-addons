@@ -1,6 +1,6 @@
 name: HA Access Point
 slug: hassio-access-point
-version: 0.0.4
+version: 0.0.5
 image: "ghcr.io/stashchenko/{arch}-access-point"
 description: Create a WiFi access point to directly connect devices to Home Assistant
 arch: [ aarch64, amd64 ]
@@ -33,6 +33,7 @@ options:
   client_internet_access: false
   client_dns_override: [ ]
   dnsmasq_config_override: [ ]
+  default_route_interface: ""
   web_port: 8080
 schema:
   ssid: match(^.{2,32}$)
@@ -59,4 +60,5 @@ schema:
     - match(^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)
   dnsmasq_config_override:
     - str?
+  default_route_interface: str?
   web_port: int(1,65535)

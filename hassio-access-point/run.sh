@@ -20,15 +20,18 @@ logger(){
 
 CONFIG_PATH=/data/options.json
 
-# Convert integer configs to boolean, to avoid a breaking old configs
+# Convert integer configs to boolean, to avoid breaking old configs
 declare -r bool_configs=( hide_ssid client_internet_access dhcp )
-for i in $bool_configs ; do
-    if bashio::config.true $i || bashio::config.false $i ; then
+for i in "${bool_configs[@]}" ; do
+    # Already a proper boolean: nothing to do
+    if bashio::config.true "$i" || bashio::config.false "$i" ; then
         continue
-    elif [ $config_value -eq 0 ] ; then
-        bashio::addon.option $config_value false
+    fi
+    config_value=$(bashio::config "$i")
+    if [ "$config_value" -eq 0 ] ; then
+        bashio::addon.option "$i" false
     else
-        bashio::addon.option $config_value true
+        bashio::addon.option "$i" true
     fi
 done
 
@@ -54,8 +57,11 @@ CLIENT_INTERNET_ACCESS=$(bashio::config.false 'client_internet_access'; echo $?)
 CLIENT_DNS_OVERRIDE=$(bashio::config 'client_dns_override' )
 DNSMASQ_CONFIG_OVERRIDE=$(bashio::config 'dnsmasq_config_override' )
 
-# Get the Default Route interface
-DEFAULT_ROUTE_INTERFACE=$(ip route show default | awk '/^default/ { print $5 }')
+if bashio::config.has_value 'default_route_interface'; then
+    DEFAULT_ROUTE_INTERFACE=$(bashio::config 'default_route_interface')
+else
+    DEFAULT_ROUTE_INTERFACE=$(ip route show default | awk '/^default/ { print $5; exit }')
+fi
 WEB_PORT=$(bashio::config 'web_port' 8080)
 
 echo "Starting HA Access Point Addon"
@@ -243,22 +249,32 @@ fi
 # CUSTOM INJECTION: Inbound NAT and mDNS Repeater
 # ==============================================================================
 logger "# Setting up mDNS repeater & routing:" 1
+if ! iptables-nft -t nat -C POSTROUTING -o "$INTERFACE" -j MASQUERADE -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
+    iptables-nft -t nat -A POSTROUTING -o "$INTERFACE" -j MASQUERADE -m comment --comment "ap-addon-inbound-nat"
+fi
 
-iptables-nft -t nat -A POSTROUTING -o "$INTERFACE" -j MASQUERADE -m comment --comment "ap-addon-inbound-nat"
-iptables-nft -A FORWARD -o "$INTERFACE" -j ACCEPT -m comment --comment "ap-addon-inbound-nat"
+if ! iptables-nft -C FORWARD -o "$INTERFACE" -j ACCEPT -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
+    iptables-nft -A FORWARD -o "$INTERFACE" -j ACCEPT -m comment --comment "ap-addon-inbound-nat"
+fi
+
+if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
+    if ! iptables-nft -C FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
+        iptables-nft -A FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inbound-nat"
+    fi
+fi
 
 if command -v mdns-repeater >/dev/null 2>&1; then
-    if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
-        logger "## Starting mdns-repeater between $INTERFACE and $DEFAULT_ROUTE_INTERFACE..." 1
+  if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
+    logger "## Starting mdns-repeater between $INTERFACE and $DEFAULT_ROUTE_INTERFACE..." 1
 
-        if [ "$DEBUG" -gt 1 ]; then
-            mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" &
-        else
-            mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" >/dev/null 2>&1 &
-        fi
+    if [ "$DEBUG" -gt 1 ]; then
+        mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" &
     else
-        logger "## Skipping mdns-repeater: Default route interface not found or matches AP interface." 1
+        mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" >/dev/null 2>&1 &
     fi
+  else
+    logger "## Skipping mdns-repeater: Default route interface not found or matches AP interface." 1
+  fi
 fi
 # ==============================================================================
 
