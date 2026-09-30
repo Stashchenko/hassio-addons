@@ -2,11 +2,11 @@
 
 # SIGTERM-handler this funciton will be executed when the container receives the SIGTERM signal (when stopping)
 term_handler(){
-	logger "Stopping Hass.io Access Point" 0
-	ifdown $INTERFACE
-	ip link set $INTERFACE down
-	ip addr flush dev $INTERFACE
-	exit 0
+  logger "Stopping Hass.io Access Point" 0
+  ifdown $INTERFACE
+  ip link set $INTERFACE down
+  ip addr flush dev $INTERFACE
+  exit 0
 }
 
 # Logging function to set verbosity of output to addon log
@@ -19,21 +19,6 @@ logger(){
 }
 
 CONFIG_PATH=/data/options.json
-
-# Convert integer configs to boolean, to avoid breaking old configs
-declare -r bool_configs=( hide_ssid client_internet_access dhcp )
-for i in "${bool_configs[@]}" ; do
-    # Already a proper boolean: nothing to do
-    if bashio::config.true "$i" || bashio::config.false "$i" ; then
-        continue
-    fi
-    config_value=$(bashio::config "$i")
-    if [ "$config_value" -eq 0 ] ; then
-        bashio::addon.option "$i" false
-    else
-        bashio::addon.option "$i" true
-    fi
-done
 
 SSID=$(bashio::config "ssid")
 WPA_PASSPHRASE=$(bashio::config "wpa_passphrase")
@@ -57,11 +42,8 @@ CLIENT_INTERNET_ACCESS=$(bashio::config.false 'client_internet_access'; echo $?)
 CLIENT_DNS_OVERRIDE=$(bashio::config 'client_dns_override' )
 DNSMASQ_CONFIG_OVERRIDE=$(bashio::config 'dnsmasq_config_override' )
 
-if bashio::config.has_value 'default_route_interface'; then
-    DEFAULT_ROUTE_INTERFACE=$(bashio::config 'default_route_interface')
-else
-    DEFAULT_ROUTE_INTERFACE=$(ip route show default | awk '/^default/ { print $5; exit }')
-fi
+# Get the Default Route interface
+DEFAULT_ROUTE_INTERFACE=$(ip route show default | awk '/^default/ { print $5 }')
 WEB_PORT=$(bashio::config 'web_port' 8080)
 
 echo "Starting HA Access Point Addon"
@@ -148,7 +130,7 @@ elif [ ${#DENY_MAC_ADDRESSES} -ge 1 ]; then
             echo "$mac"$'\n' >> /hostapd.deny
             logger "$mac" 0
         done
-        logger "Add to hostapd.conf: accept_mac_file=/hostapd.deny" 1
+        logger "Add to hostapd.conf: deny_mac_file=/hostapd.deny" 1
         echo "deny_mac_file=/hostapd.deny"$'\n' >> /hostapd.conf
 else
     logger "Add to hostapd.conf: macaddr_acl=0" 1
@@ -215,58 +197,85 @@ if $(bashio::config.true "dhcp"); then
         done
     fi
 else
-	logger "# DHCP not enabled. Skipping dnsmasq" 1
+  logger "# DHCP not enabled. Skipping dnsmasq" 1
 fi
 
-is_masquerading_enabled() {
-    iptables-nft -t nat -C POSTROUTING -o $DEFAULT_ROUTE_INTERFACE -j MASQUERADE -m comment --comment "ap-addon-inet" 2>/dev/null
-}
+# ==============================================================================
+# Routing
+# ==============================================================================
 
-is_forwarding_enabled() {
-    iptables-nft -C FORWARD -i $INTERFACE -o $DEFAULT_ROUTE_INTERFACE -j ACCEPT -m comment --comment "ap-addon-inet" 2>/dev/null
-}
+logger "# Setting up routing:" 1
+
+IP_FORWARD=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || echo 0)
+if [ "$IP_FORWARD" != "1" ]; then
+    echo "ERROR: HAOS host net.ipv4.ip_forward is disabled"
+    exit 1
+fi
+
+if [ -z "$DEFAULT_ROUTE_INTERFACE" ]; then
+    echo "ERROR: Default route interface not found"
+    exit 1
+fi
+
+if [ "$DEFAULT_ROUTE_INTERFACE" = "$INTERFACE" ]; then
+    echo "ERROR: Default route interface matches AP interface"
+    exit 1
+fi
+
+# Get the AP network from the configured AP interface
+AP_NETWORK=$(ip -4 route show dev "$INTERFACE" scope link | awk '$1 ~ /\// { print $1; exit }')
+
+if [ -z "$AP_NETWORK" ]; then
+    echo "ERROR: Could not determine AP network for $INTERFACE"
+    exit 1
+fi
+
+# Get the LAN network from the default route interface
+LAN_NETWORK=$(ip -4 route show dev "$DEFAULT_ROUTE_INTERFACE" scope link | awk '$1 ~ /\// { print $1; exit }')
+
+if [ -z "$LAN_NETWORK" ]; then
+    echo "ERROR: Could not determine LAN network for $DEFAULT_ROUTE_INTERFACE"
+    exit 1
+fi
+
+logger "AP network: $AP_NETWORK" 1
+logger "LAN network: $LAN_NETWORK" 1
+
+# LAN routing
+if ! iptables-nft -C FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-lan-out" 2>/dev/null; then
+    iptables-nft -A FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-lan-out"
+fi
+
+if ! iptables-nft -C FORWARD -i "$DEFAULT_ROUTE_INTERFACE" -o "$INTERFACE" -s "$LAN_NETWORK" -d "$AP_NETWORK" -j ACCEPT -m comment --comment "ap-addon-lan-in" 2>/dev/null; then
+    iptables-nft -A FORWARD -i "$DEFAULT_ROUTE_INTERFACE" -o "$INTERFACE" -s "$LAN_NETWORK" -d "$AP_NETWORK" -j ACCEPT -m comment --comment "ap-addon-lan-in"
+fi
 
 # Setup Client Internet Access
 if $(bashio::config.true "client_internet_access"); then
-    if ! is_masquerading_enabled; then
-        iptables-nft -t nat -A POSTROUTING -o $DEFAULT_ROUTE_INTERFACE -j MASQUERADE -m comment --comment "ap-addon-inet"
+    if ! iptables-nft -t nat -C POSTROUTING -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j MASQUERADE -m comment --comment "ap-addon-inet" 2>/dev/null; then
+        iptables-nft -t nat -A POSTROUTING -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j MASQUERADE -m comment --comment "ap-addon-inet"
     fi
-    if ! is_forwarding_enabled; then
-        iptables-nft -A FORWARD -i $INTERFACE -o $DEFAULT_ROUTE_INTERFACE -j ACCEPT -m comment --comment "ap-addon-inet"
-        iptables-nft -A FORWARD -i $DEFAULT_ROUTE_INTERFACE -o $INTERFACE -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inet"
+    if ! iptables-nft -C FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-inet" 2>/dev/null; then
+        iptables-nft -A FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-inet"
+        iptables-nft -A FORWARD -i "$DEFAULT_ROUTE_INTERFACE" -o "$INTERFACE" -d "$AP_NETWORK" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inet"
     fi
 else
-    if is_masquerading_enabled; then
-        iptables-nft -t nat -D POSTROUTING -o $DEFAULT_ROUTE_INTERFACE -j MASQUERADE -m comment --comment "ap-addon-inet"
+    if iptables-nft -t nat -C POSTROUTING -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j MASQUERADE -m comment --comment "ap-addon-inet" 2>/dev/null; then
+        iptables-nft -t nat -D POSTROUTING -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j MASQUERADE -m comment --comment "ap-addon-inet"
     fi
-    if is_forwarding_enabled; then
-        iptables-nft -D FORWARD -i $INTERFACE -o $DEFAULT_ROUTE_INTERFACE -j ACCEPT -m comment --comment "ap-addon-inet"
-        iptables-nft -D FORWARD -i $DEFAULT_ROUTE_INTERFACE -o $INTERFACE -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inet"
+    if iptables-nft -C FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-inet" 2>/dev/null; then
+        iptables-nft -D FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -s "$AP_NETWORK" ! -d "$LAN_NETWORK" -j ACCEPT -m comment --comment "ap-addon-inet"
+        iptables-nft -D FORWARD -i "$DEFAULT_ROUTE_INTERFACE" -o "$INTERFACE" -d "$AP_NETWORK" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inet"
     fi
 fi
 
 # ==============================================================================
-# CUSTOM INJECTION: Inbound NAT and mDNS Repeater
+# mDNS Repeater
 # ==============================================================================
-logger "# Setting up mDNS repeater & routing:" 1
-if ! iptables-nft -t nat -C POSTROUTING -o "$INTERFACE" -j MASQUERADE -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
-    iptables-nft -t nat -A POSTROUTING -o "$INTERFACE" -j MASQUERADE -m comment --comment "ap-addon-inbound-nat"
-fi
-
-if ! iptables-nft -C FORWARD -o "$INTERFACE" -j ACCEPT -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
-    iptables-nft -A FORWARD -o "$INTERFACE" -j ACCEPT -m comment --comment "ap-addon-inbound-nat"
-fi
-
-if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
-    if ! iptables-nft -C FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inbound-nat" 2>/dev/null; then
-        iptables-nft -A FORWARD -i "$INTERFACE" -o "$DEFAULT_ROUTE_INTERFACE" -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT -m comment --comment "ap-addon-inbound-nat"
-    fi
-fi
 
 if command -v mdns-repeater >/dev/null 2>&1; then
   if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
     logger "## Starting mdns-repeater between $INTERFACE and $DEFAULT_ROUTE_INTERFACE..." 1
-
     if [ "$DEBUG" -gt 1 ]; then
         mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" &
     else
@@ -276,7 +285,6 @@ if command -v mdns-repeater >/dev/null 2>&1; then
     logger "## Skipping mdns-repeater: Default route interface not found or matches AP interface." 1
   fi
 fi
-# ==============================================================================
 
 # Start Status Web Server in background with PYTHONPATH set
 logger "## Starting Status Web Server on port $WEB_PORT..." 1

@@ -1,22 +1,5 @@
 # Changelog
 
-## [0.0.5] - 2026-09-30
-
-### Changed
-
-- Inbound-NAT/forwarding rules are now added idempotently (with -C checks), so they no longer accumulate as duplicates
-  on every add-on restart.
-
-- Explicit AP -> LAN return rule for established connections, so reaching AP devices from the LAN (e.g. ESPHome OTA)
-  works even with `client_internet_access`
-  disabled. Combine with a static route `192.168.99.0/24 -> <this host>` on your LAN router (or client) so LAN devices
-  can route to AP addresses.
-- New optional `default_route_interface` option to override the auto-detected upstream interface.
-
-- Fixed the legacy integer-to-boolean config migration loop, which only ever processed the first option and referenced
-  an unset variable.
-- Default-route auto-detection now takes only the first default route.
-
 ## [0.0.4] - 2026-09-28
 
 ### Added
