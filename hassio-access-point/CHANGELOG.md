@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.5] - 2026-10-01
+
+### Changed
+
+- Remove disconnected devices from the UI
+
 ## [0.0.4] - 2026-09-28
 
 ### Added

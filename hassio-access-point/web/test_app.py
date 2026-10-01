@@ -65,6 +65,48 @@ Station e8:f6:0a:89:69:fc (on wlan0)
         result = get_station_signals("wlan0")
         self.assertEqual(result, {})
 
+    @patch("app.render_template")
+    @patch("app.get_station_signals")
+    @patch("app.os.path.exists")
+    @patch("builtins.open")
+    def test_index_excludes_disconnected_device(self, mock_open, mock_exists, mock_get_station_signals,
+                                                mock_render_template):
+        mock_exists.return_value = True
+
+        mock_open.return_value.__enter__.return_value = [
+            "1234567890 14:63:93:6e:96:70 192.168.99.10 device-connected *\n",
+            "1234567891 e8:f6:0a:89:69:fc 192.168.99.11 device-disconnected *\n",
+        ]
+
+        mock_get_station_signals.return_value = {
+            "14:63:93:6e:96:70": {
+                "dbm": -38,
+                "percent": 100,
+                "rx_bitrate": "72.2 MBit/s",
+                "tx_bitrate": "72.2 MBit/s",
+                "connected_time": "1 hour and 15 minutes",
+            }
+        }
+
+        mock_render_template.return_value = "OK"
+
+        with app.test_client() as client:
+            response = client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+
+        mock_render_template.assert_called_once()
+
+        _, kwargs = mock_render_template.call_args
+
+        clients = kwargs["clients"]
+
+        self.assertEqual(len(clients), 1)
+        self.assertEqual(clients[0]["mac"], "14:63:93:6e:96:70")
+        self.assertEqual(clients[0]["ip"], "192.168.99.10")
+        self.assertEqual(clients[0]["hostname"], "device-connected")
+        self.assertNotIn("e8:f6:0a:89:69:fc", [client["mac"] for client in clients])
+
 
 if __name__ == '__main__':
     unittest.main()

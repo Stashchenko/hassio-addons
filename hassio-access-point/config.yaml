@@ -1,6 +1,6 @@
 name: HA Access Point
 slug: hassio-access-point
-version: 0.0.4
+version: 0.0.5
 image: "ghcr.io/stashchenko/{arch}-access-point"
 description: Create a WiFi access point to directly connect devices to Home Assistant
 arch: [ aarch64, amd64 ]

@@ -105,7 +105,10 @@ def index():
                     mac = parts[1].lower()
                     hostname = parts[3]
 
-                    stats = station_data.get(mac, {})
+                    if mac not in station_data:
+                        continue
+
+                    stats = station_data[mac]
                     signal_display = f"{stats.get('percent', 'N/A')}% ({stats.get('dbm', 'N/A')} dBm)" if stats.get(
                         "dbm") != "N/A" else "N/A"
 
