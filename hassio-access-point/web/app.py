@@ -2,7 +2,7 @@ import os
 import subprocess
 
 import humanize
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -88,10 +88,8 @@ def get_station_signals(interface):
     return stations
 
 
-@app.route("/")
-def index():
-    ap_info = get_ap_info(INTERFACE)
-    station_data = get_station_signals(INTERFACE)
+def get_clients(station_data):
+    """Build client list from DHCP leases and station data."""
     clients = []
 
     if os.path.exists(LEASES_FILE):
@@ -127,7 +125,34 @@ def index():
 
     clients.sort(key=lambda client: tuple(map(int, client["ip"].split("."))))
 
+    return clients
+
+
+@app.route("/")
+def index():
+    """
+    Initial page load.
+
+    Everything is rendered server-side so the page is fully populated immediately.
+    """
+    ap_info = get_ap_info(INTERFACE)
+    station_data = get_station_signals(INTERFACE)
+    clients = get_clients(station_data)
+
     return render_template("index.html", clients=clients, ap_info=ap_info)
+
+
+@app.route("/api/v1/clients")
+def api_clients():
+    """
+    Return the current clients as JSON.
+
+    The frontend polls this endpoint every 5 seconds.
+    """
+    station_data = get_station_signals(INTERFACE)
+    clients = get_clients(station_data)
+
+    return jsonify(clients)
 
 
 if __name__ == "__main__":

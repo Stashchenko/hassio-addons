@@ -18,5 +18,10 @@ To run the unit tests for the signal parsing and backend logic:
 cd hassio-access-point/web
 
 python -m unittest discover -v
+
+# with coverage 
+python -m coverage run -m unittest discover -v
+python -m coverage report -m
+python -m coverage html
 ```
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.6] - 2026-10-02
+
+### Added
+
+- Automatically refresh the client list every 5 seconds.
+
 ## [0.0.5] - 2026-10-01
 
 ### Changed
