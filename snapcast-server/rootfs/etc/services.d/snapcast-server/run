@@ -25,8 +25,8 @@ bashio::log.debug "Config: $(bashio::app.config)"
 
 echo "[stream]" > "${config}"
 
-# Always provide the default silent stream
-echo "source = process:///bin/dd?name=default&sampleformat=$(bashio::config 'sampleformat')&params=if=/dev/zero%20bs=3840" >> "${config}"
+# Always provide the default stream
+echo "source = pipe:///tmp/snapfifo?name=default&sampleformat=$(bashio::config 'sampleformat')&mode=create" >> "${config}"
 
 # Make the default stream the initial stream for new clients
 echo "default_source = default" >> "${config}"
