@@ -5,12 +5,72 @@
 # ==============================================================================
 
 until [ -e /run/avahi-daemon/pid ]; do
-  sleep 1s
+    sleep 1s
 done
 
-# Wait for snapcast-server to start
-sleep 5s
+bashio::log.info "Waiting for PulseAudio to become available..."
+for _ in $(seq 1 60); do
+    [ -S /run/audio/pulse.sock ] && break
+    sleep 1s
+done
+if [ ! -S /run/audio/pulse.sock ]; then
+    bashio::log.warning "PulseAudio socket not found after 60s; starting client anyway."
+fi
 
-bashio::log.info "Starting snapcast client..."
+SPIN_THRESHOLD=50
+SPIN_WINDOW=10
 
-/usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse
+get_sink() {
+    pactl list sinks short 2>/dev/null \
+        | awk '$2 ~ /^alsa_output/ && $2 !~ /\.monitor$/ { print $2; exit }'
+}
+
+reset_sink() {
+    local sink
+    sink="$(get_sink)"
+    [ -z "$sink" ] && sink="@DEFAULT_SINK@"
+    bashio::log.warning  "Resetting PulseAudio sink '${sink}' to recover the stuck DAC clock."
+    pactl suspend-sink "$sink" 1 2>/dev/null
+    sleep 1s
+    pactl suspend-sink "$sink" 0 2>/dev/null
+}
+
+fifo="/tmp/snapclient.fifo"
+rm -f "$fifo"
+mkfifo "$fifo"
+
+while true; do
+    bashio::log.info "Starting snapcast client..."
+
+    /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse >"$fifo" 2>&1 &
+    snap_pid=$!
+
+    count=0
+    window_start=$(date +%s)
+
+    while IFS= read -r line; do
+        printf '%s\n' "$line"
+
+        case "$line" in
+            *outputBufferDacTime*)
+                now=$(date +%s)
+                if [ $((now - window_start)) -ge "$SPIN_WINDOW" ]; then
+                    count=0
+                    window_start=$now
+                fi
+                count=$((count + 1))
+                if [ "$count" -ge "$SPIN_THRESHOLD" ]; then
+                    bashio::log.warning "snapcast client wedged on the audio clock (${count} buffer errors in <${SPIN_WINDOW}s)."
+                    reset_sink
+                    kill "$snap_pid" 2>/dev/null
+                    break
+                fi
+                ;;
+        esac
+    done <"$fifo"
+
+    kill "$snap_pid" 2>/dev/null
+    wait "$snap_pid" 2>/dev/null
+    bashio::log.info "snapcast client exited; restarting in 3s..."
+    sleep 3s
+done

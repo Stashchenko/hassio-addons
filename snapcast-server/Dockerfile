@@ -10,6 +10,7 @@ RUN \
         dbus-libs \
         nss \
         pulseaudio \
+        pulseaudio-utils \
         alsa-plugins-pulse \
         alsa-lib \
         curl \
