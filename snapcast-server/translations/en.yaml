@@ -13,3 +13,9 @@ configuration:
     name: Sample format
   log_level:
     name: Log level
+  extra_clients:
+    name: Extra local clients
+    description: >-
+      Run additional local snapcast clients, each pinned to a specific PulseAudio sink. Use name for a label (used to
+      build the client's hostID) and sink for the PulseAudio sink name (e.g. bluez_sink.XX_XX_XX_XX_XX_XX.a2dp_sink,
+      as shown by pactl list sinks short). Leaving sink empty uses the default sink.

@@ -1,3 +1,7 @@
+## 0.0.6
+
+- New `extra_clients` option to run additional snapcast clients on the same host. (ex. Bluetooth A2DP sink)
+
 ## 0.0.5
 
 - Default buffer 1500 ms

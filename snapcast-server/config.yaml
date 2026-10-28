@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Snapcast server
-version: "0.0.5"
+version: "0.0.6"
 slug: snapcast-server
 description: Snapcast server
 url: "https://github.com/stashchenko/hassio-addons/tree/main/snapcast-server"
@@ -34,6 +34,7 @@ options:
   sampleformat: "48000:16:2"
   log_level: info
   advertise_interfaces: []
+  extra_clients: []
 
 schema:
   # Nested option keeps the YAML editor on the add-on config page
@@ -46,4 +47,7 @@ schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   advertise_interfaces:
     - str
+  extra_clients:
+    - name: str
+      sink: str
 image: "ghcr.io/stashchenko/{arch}-snapcast-server"

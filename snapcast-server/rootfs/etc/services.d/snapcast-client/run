@@ -35,6 +35,31 @@ reset_sink() {
     pactl suspend-sink "$sink" 0 2>/dev/null
 }
 
+# Simple restart loop for an extra client pinned to a specific PulseAudio sink.
+run_extra_client() {
+    local host_id="$1"
+    local sink="$2"
+    while true; do
+       bashio::log.info "Starting snapcast client '${host_id}' on sink '${sink}'..."
+       PULSE_SINK="$sink" /usr/bin/snapclient --host 127.0.0.1 --hostID "$host_id" --player pulse
+       bashio::log.info "snapcast client '${host_id}' exited; restarting in 3s..."
+       sleep 3s
+    done
+}
+
+# Launch extra clients in the background, each on its own sink.
+if bashio::config.has_value 'extra_clients'; then
+    for idx in $(bashio::config 'extra_clients|keys[]'); do
+        name="$(bashio::config "extra_clients[${idx}].name")"
+        sink="$(bashio::config "extra_clients[${idx}].sink")"
+
+        slug="$(printf '%s' "$name" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')"
+        [ -z "$slug" ] && slug="extra-${idx}"
+
+        run_extra_client "home-assistant-${slug}" "$sink" &
+    done
+fi
+
 fifo="/tmp/snapclient.fifo"
 rm -f "$fifo"
 mkfifo "$fifo"
