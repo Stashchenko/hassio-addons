@@ -277,9 +277,9 @@ if command -v mdns-repeater >/dev/null 2>&1; then
   if [ -n "$DEFAULT_ROUTE_INTERFACE" ] && [ "$DEFAULT_ROUTE_INTERFACE" != "$INTERFACE" ]; then
     logger "## Starting mdns-repeater between $INTERFACE and $DEFAULT_ROUTE_INTERFACE..." 1
     if [ "$DEBUG" -gt 1 ]; then
-        mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" &
+        mdns-repeater -f "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" &
     else
-        mdns-repeater "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" >/dev/null 2>&1 &
+        mdns-repeater -f "$INTERFACE" "$DEFAULT_ROUTE_INTERFACE" >/dev/null 2>&1 &
     fi
   else
     logger "## Skipping mdns-repeater: Default route interface not found or matches AP interface." 1

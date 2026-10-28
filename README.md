@@ -27,16 +27,16 @@ Click the **Add Repository** button below to automatically add this repository t
 
 ## 📦 Available Add-ons
 
-| Add-on | Description                                                                                                                  | Supported Architectures |
-| :--- |:-----------------------------------------------------------------------------------------------------------------------------| :--- |
+| Add-on                                                                                        | Description                                                                                                                  | Supported Architectures |
+|:----------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------| :--- |
 | **[Snapcast Server](https://github.com/Stashchenko/hassio-addons/tree/main/snapcast-server)** | Synchronized multi-room audio server and **Snapweb UI**.                                                                     | ![aarch64][aarch64-shield] ![amd64][amd64-shield] |
-| **[Hass.io Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/hassio-access-point)** | Create a dedicated Wi-Fi access point on Home Assistant with built-in DHCP, client routing, and an Ingress status dashboard. | ![aarch64][aarch64-shield] ![amd64][amd64-shield] |
+| **[HA Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/ha-access-point)** | Create a dedicated Wi-Fi access point on Home Assistant with built-in DHCP, client routing, and an Ingress status dashboard. | ![aarch64][aarch64-shield] ![amd64][amd64-shield] |
 
 ---
 
 ## 🛠️ Add-on Highlights
 
-### [Hass.io Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/hassio-access-point)
+### [HA Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/ha-access-point)
 
 A robust Wi-Fi access point add-on designed to connect wireless IoT devices and clients directly to your Home Assistant hardware. *(Originally based on the [Hassio-Access-Point](https://github.com/ex-ml/Hassio-Access-Point) project by Matt Longman, enhanced with a custom status web server and Ingress support)*.
 

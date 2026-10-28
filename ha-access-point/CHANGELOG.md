@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.7] - 2026-10-28
+
+### Added
+
+- Hide `mdns-repeater` out by default
+
 ## [0.0.6] - 2026-10-02
 
 ### Added

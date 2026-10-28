@@ -1,10 +1,10 @@
 name: HA Access Point
-slug: hassio-access-point
-version: 0.0.6
+slug: ha-access-point
+version: 0.0.7
 image: "ghcr.io/stashchenko/{arch}-access-point"
 description: Create a WiFi access point to directly connect devices to Home Assistant
 arch: [ aarch64, amd64 ]
-url: https://github.com/stashchenko/hassio-addons
+url: https://github.com/Stashchenko/hassio-addons/tree/main/ha-access-point
 startup: system
 host_network: true
 host_dbus: true

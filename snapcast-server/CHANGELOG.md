@@ -1,7 +1,12 @@
+## 0.0.5
+
+- Default buffer 1500 ms
+
 ## 0.0.4
 
 - Local snapcast client now waits for the PulseAudio socket before starting, instead of a fixed delay.
-- Added a watchdog that detects the outputBufferDacTime runaway (seen on some VM/USB-audio setups where the DAC clock wedges,
+- Added a watchdog that detects the outputBufferDacTime runaway (seen on some VM/USB-audio setups where the DAC clock
+  wedges,
   spiking CPU with no audio). On detection it resets the PulseAudio sink (suspend/resume, which reopens the ALSA/USB
   device) and restarts the client, so a reboot is no longer needed.
 - Added the pulseaudio-utils package to the image to provide pactl for the sink reset above.

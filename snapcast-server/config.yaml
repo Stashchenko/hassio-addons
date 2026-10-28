@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Snapcast server
-version: "0.0.4"
+version: "0.0.5"
 slug: snapcast-server
 description: Snapcast server
 url: "https://github.com/stashchenko/hassio-addons/tree/main/snapcast-server"
@@ -28,7 +28,7 @@ ports_description:
 options:
   streams:
     streams: []
-  buffer: 1000
+  buffer: 1500
   codec: pcm
   send_to_muted: false
   sampleformat: "48000:16:2"

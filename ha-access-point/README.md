@@ -1,4 +1,4 @@
-### [Hass.io Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/hassio-access-point)
+### [HA Access Point](https://github.com/Stashchenko/hassio-addons/tree/main/ha-access-point)
 
 A robust Wi-Fi access point add-on designed to connect wireless IoT devices and clients directly to your Home Assistant hardware.
 
@@ -15,7 +15,7 @@ A robust Wi-Fi access point add-on designed to connect wireless IoT devices and 
 To run the unit tests for the signal parsing and backend logic:
 
 ```bash
-cd hassio-access-point/web
+cd ha-access-point/web
 
 python -m unittest discover -v
 
