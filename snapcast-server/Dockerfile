@@ -13,11 +13,15 @@ RUN \
         pulseaudio-utils \
         alsa-plugins-pulse \
         alsa-lib \
+        python3 \
+        py3-flask \
+        py3-waitress \
         curl \
         unzip \
     \
     && apk add --no-cache \
         snapcast \
+        caps \
         --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
         --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
     \

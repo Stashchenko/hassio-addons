@@ -1,0 +1,17 @@
+#!/command/with-contenv bashio
+
+mkdir -p /run/snapcast-pulse
+
+bashio::log.info "Waiting for the host PulseAudio daemon to answer..."
+for i in $(seq 1 60); do
+    PULSE_SERVER=unix:/run/audio/pulse.sock pactl info >/dev/null 2>&1 && break
+    sleep 1
+done
+if ! PULSE_SERVER=unix:/run/audio/pulse.sock pactl info >/dev/null 2>&1; then
+    bashio::log.warning "Host PulseAudio not reachable after 60s; starting local daemon anyway."
+fi
+
+export LADSPA_PATH=/usr/lib/ladspa
+
+bashio::log.info "Starting local PulseAudio (EQ) on unix:/run/snapcast-pulse/native.sock..."
+exec pulseaudio -n --daemonize=no --exit-idle-time=-1 --log-target=stderr --file=/etc/pulse/snapcast.pa

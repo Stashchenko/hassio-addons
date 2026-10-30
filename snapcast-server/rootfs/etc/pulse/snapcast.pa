@@ -1,0 +1,4 @@
+load-module module-native-protocol-unix socket=/run/snapcast-pulse/native.sock auth-anonymous=1
+
+# Forward audio to the host PulseAudio's default sink (the real DAC).
+load-module module-tunnel-sink sink_name=host_out server=unix:/run/audio/pulse.sock

@@ -1,0 +1,139 @@
+:root {
+    color-scheme: light dark;
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 1.5rem;
+    background: #0f1115;
+    color: #e7e9ee;
+}
+
+h1 {
+    font-size: 1.25rem;
+    margin: 0 0 0.25rem;
+}
+
+.sub {
+    color: #9aa3b2;
+    font-size: 0.85rem;
+    margin: 0 0 1.25rem;
+}
+
+.warn {
+    background: #3a2a12;
+    color: #ffd591;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.toggle input {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+fieldset:disabled {
+    opacity: 0.45;
+}
+
+.bands {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+}
+
+.band input[type=range] {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 28px;
+    height: 200px;
+}
+
+.band .val {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+    color: #cfd4de;
+}
+
+.band .freq {
+    font-size: 0.72rem;
+    color: #9aa3b2;
+    margin-bottom: 0.4rem;
+}
+
+.preamp {
+    margin: 1.5rem 0;
+}
+
+.preamp label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+}
+
+.preamp input[type=range] {
+    width: 100%;
+    max-width: 420px;
+}
+
+.row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+button {
+    background: #2b6cff;
+    color: #fff;
+    border: 0;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #30353f;
+}
+
+#status {
+    font-size: 0.85rem;
+    color: #9aa3b2;
+}
+
+#status.ok {
+    color: #7ee081;
+}
+
+#status.err {
+    color: #ff8a8a;
+}

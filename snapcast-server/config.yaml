@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Snapcast server
-version: "0.0.7"
+version: "0.0.8"
 slug: snapcast-server
 description: Snapcast server
 url: "https://github.com/stashchenko/hassio-addons/tree/main/snapcast-server"
@@ -20,10 +20,12 @@ map:
 ports:
   1704/tcp: 1704
   1705/tcp: 1705
+  1706/tcp: 1706
   1780/tcp: 1780
 ports_description:
   1704/tcp: Snapcast client connections
   1705/tcp: Snapcast's control interface
+  1706/tcp: Equalizer web interface
   1780/tcp: Snapcast websocket connections and web-interface
 options:
   streams:
@@ -35,6 +37,7 @@ options:
   log_level: info
   advertise_interfaces: []
   extra_clients: []
+  eq_web_port: 1706
 
 schema:
   # Nested option keeps the YAML editor on the add-on config page
@@ -50,4 +53,5 @@ schema:
   extra_clients:
     - name: str
       sink: str
+  eq_web_port: port
 image: "ghcr.io/stashchenko/{arch}-snapcast-server"

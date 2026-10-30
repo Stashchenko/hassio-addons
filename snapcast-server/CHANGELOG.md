@@ -1,5 +1,11 @@
+## 0.0.8
+
+- New equalizer web tuner for local client: a 10-band equalizer. The equalizer is applied to the local snapcast client
+  only, so it can be used to tune the local DAC output without affecting other
+  clients.
+
 ## 0.0.7
- 
+
 - Fized the DAC-runaway watchdog rest sink in case of pulse audio stuck.
 
 ## 0.0.6

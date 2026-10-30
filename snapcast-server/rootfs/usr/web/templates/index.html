@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Snapcast EQ</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<h1>Snapcast equalizer</h1>
+<p class="sub">10-band graphic EQ + preamp for the local client. Changes apply live and persist across restarts.</p>
+<div class="warn" id="warn">Enabled, but the equalizer sink failed to load — audio is using the default sink.
+    Check the add-on log.
+</div>
+
+<label class="toggle"><input type="checkbox" id="enabled"> Enable equalizer</label>
+
+<fieldset id="controls">
+    <div class="bands" id="bands"></div>
+
+    <div class="preamp">
+        <label for="preamp">Preamp <span id="preampVal">0</span> dB</label>
+        <input type="range" id="preamp" min="-24" max="12" step="1" value="0">
+    </div>
+
+    <div class="row">
+        <button id="reset" class="secondary">Reset to flat</button>
+    </div>
+</fieldset>
+
+<div class="row"><span id="status"></span></div>
+
+<script src="static/app.js"></script>
+</body>
+</html>

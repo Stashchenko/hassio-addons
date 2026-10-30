@@ -1,0 +1,2 @@
+#!/command/with-contenv bashio
+bashio::log.warning "local PulseAudio (EQ) stopped"

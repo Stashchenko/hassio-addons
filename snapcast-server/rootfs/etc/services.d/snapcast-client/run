@@ -22,6 +22,23 @@ CPU_STRIKES=6
 CPU_INTERVAL=5
 CLK_TCK="$(getconf CLK_TCK 2>/dev/null || echo 100)"
 
+LOCAL_PULSE="unix:/run/snapcast-pulse/native.sock"
+
+if grep -q '^ENABLED=1' /data/eq.conf 2>/dev/null; then
+    bashio::log.info "Equalizer enabled; waiting for the local equalizer PulseAudio daemon..."
+    for _ in $(seq 1 60); do
+        PULSE_SERVER="$LOCAL_PULSE" pactl list sinks short 2>/dev/null | grep -q 'host_out' && break
+        sleep 1s
+    done
+    MAIN_SINK="$(PYTHONPATH=/usr/web PULSE_SERVER="$LOCAL_PULSE" python3 /usr/web/eq.py setup)"
+    [ -z "$MAIN_SINK" ] && MAIN_SINK="host_out"
+    CLIENT_SERVER="$LOCAL_PULSE"
+else
+    bashio::log.info "Equalizer disabled; using the host PulseAudio directly."
+    MAIN_SINK=""
+    CLIENT_SERVER=""
+fi
+
 get_running_sink() {
  pactl list sinks short 2>/dev/null | awk '$2 ~ /^alsa_output/ && $2 !~ /\.monitor$/ && toupper($NF) == "RUNNING" { print $2; exit }'
 }
@@ -53,8 +70,12 @@ run_extra_client() {
     local host_id="$1"
     local sink="$2"
     while true; do
-       bashio::log.info "Starting snapcast client '${host_id}' on sink '${sink}'..."
-       PULSE_SINK="$sink" /usr/bin/snapclient --host 127.0.0.1 --hostID "$host_id" --player pulse
+       bashio::log.info "Starting snapcast client '${host_id}' on sink '${sink:-default}'..."
+       if [ -n "$sink" ]; then
+        PULSE_SINK="$sink" /usr/bin/snapclient --host 127.0.0.1 --hostID "$host_id" --player pulse
+       else
+        /usr/bin/snapclient --host 127.0.0.1 --hostID "$host_id" --player pulse
+       fi
        bashio::log.info "snapcast client '${host_id}' exited; restarting in 3s..."
        sleep 3s
     done
@@ -76,7 +97,12 @@ fi
 while true; do
     bashio::log.info "Starting snapcast client..."
 
-    /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse &
+    if [ -n "$CLIENT_SERVER" ]; then
+      PULSE_SERVER="$CLIENT_SERVER" PULSE_SINK="$MAIN_SINK" \
+        /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse &
+    else
+      /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse &
+    fi
     snap_pid=$!
 
     strikes=0
