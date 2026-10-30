@@ -1,6 +1,16 @@
+## 0.0.7
+ 
+- Fized the DAC-runaway watchdog rest sink in case of pulse audio stuck.
+
 ## 0.0.6
 
-- New `extra_clients` option to run additional snapcast clients on the same host. (ex. Bluetooth A2DP sink)
+- New `extra_clients` option to run additional snapcast clients on the same host. (ex. Bluetooth A2DP sink).
+  Scan via `pactl list sinks short`
+  ```
+  alsa_output.usb-CSCTEK_USB_Audio_and_HID_A34004801402-00.analog-stereo  module-alsa-card.c       s16le 2ch 48000Hz       IDLE
+  bluez_sink.D1_37_3B_5A_C6_41.a2dp_sink  module-bluez5-device.c  s16le 2ch 44100Hz       IDLE
+  ```
+  Thees's what we may add to extra_clients `bluez_sink.D1_37_3B_5A_C6_41.a2dp_sink`
 
 ## 0.0.5
 

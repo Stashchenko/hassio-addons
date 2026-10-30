@@ -17,22 +17,35 @@ if [ ! -S /run/audio/pulse.sock ]; then
     bashio::log.warning "PulseAudio socket not found after 60s; starting client anyway."
 fi
 
-SPIN_THRESHOLD=50
-SPIN_WINDOW=10
+CPU_THRESHOLD=95
+CPU_STRIKES=6
+CPU_INTERVAL=5
+CLK_TCK="$(getconf CLK_TCK 2>/dev/null || echo 100)"
 
-get_sink() {
-    pactl list sinks short 2>/dev/null \
-        | awk '$2 ~ /^alsa_output/ && $2 !~ /\.monitor$/ { print $2; exit }'
+get_running_sink() {
+ pactl list sinks short 2>/dev/null | awk '$2 ~ /^alsa_output/ && $2 !~ /\.monitor$/ && toupper($NF) == "RUNNING" { print $2; exit }'
+}
+
+# Sum of utime+stime (clock ticks) for a pid; robust to spaces/parens in comm.
+proc_cpu_ticks() {
+  local stat rest
+  stat="$(cat "/proc/$1/stat" 2>/dev/null)" || return 1
+  rest="${stat#*) }"
+  set -- $rest
+  printf '%s' "$(( ${12} + ${13} ))"
 }
 
 reset_sink() {
-    local sink
-    sink="$(get_sink)"
+    local sink="$1" err
     [ -z "$sink" ] && sink="@DEFAULT_SINK@"
-    bashio::log.warning  "Resetting PulseAudio sink '${sink}' to recover the stuck DAC clock."
-    pactl suspend-sink "$sink" 1 2>/dev/null
+    bashio::log.warning "Resetting PulseAudio sink '${sink}' to recover the stuck DAC clock."
+    if ! err="$(pactl suspend-sink "$sink" 1 2>&1)"; then
+      bashio::log.warning "pactl suspend-sink '${sink}' 1 failed: ${err}"
+    fi
     sleep 1s
-    pactl suspend-sink "$sink" 0 2>/dev/null
+    if ! err="$(pactl suspend-sink "$sink" 0 2>&1)"; then
+      bashio::log.warning "pactl suspend-sink '${sink}' 0 failed: ${err}"
+    fi
 }
 
 # Simple restart loop for an extra client pinned to a specific PulseAudio sink.
@@ -60,39 +73,39 @@ if bashio::config.has_value 'extra_clients'; then
     done
 fi
 
-fifo="/tmp/snapclient.fifo"
-rm -f "$fifo"
-mkfifo "$fifo"
-
 while true; do
     bashio::log.info "Starting snapcast client..."
 
-    /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse >"$fifo" 2>&1 &
+    /usr/bin/snapclient --host 127.0.0.1 --hostID home-assistant --player pulse &
     snap_pid=$!
 
-    count=0
-    window_start=$(date +%s)
+    strikes=0
+    prev_ticks="$(proc_cpu_ticks "$snap_pid")" || prev_ticks=0
 
-    while IFS= read -r line; do
-        printf '%s\n' "$line"
+    while kill -0 "$snap_pid" 2>/dev/null; do
+        sleep "$CPU_INTERVAL"
 
-        case "$line" in
-            *outputBufferDacTime*)
-                now=$(date +%s)
-                if [ $((now - window_start)) -ge "$SPIN_WINDOW" ]; then
-                    count=0
-                    window_start=$now
+        cur_ticks="$(proc_cpu_ticks "$snap_pid")" || break
+        cpu=$(( (cur_ticks - prev_ticks) * 100 / (CLK_TCK * CPU_INTERVAL) ))
+        prev_ticks="$cur_ticks"
+
+        if [ "$cpu" -ge "$CPU_THRESHOLD" ]; then
+            strikes=$((strikes + 1))
+            bashio::log.warning "snapcast client CPU at ${cpu}% of a core (strike ${strikes}/${CPU_STRIKES})."
+            if [ "$strikes" -ge "$CPU_STRIKES" ]; then
+                running_sink="$(get_running_sink)"
+                if [ -n "$running_sink" ]; then
+                    bashio::log.warning "snapcast client pegged at ${cpu}% with sink '${running_sink}' RUNNING; resetting it (stuck DAC clock)."
+                    reset_sink "$running_sink"
+                else
+                    bashio::log.warning "snapcast client pegged at ${cpu}% but no RUNNING hardware sink found; restarting client without a sink reset."
                 fi
-                count=$((count + 1))
-                if [ "$count" -ge "$SPIN_THRESHOLD" ]; then
-                    bashio::log.warning "snapcast client wedged on the audio clock (${count} buffer errors in <${SPIN_WINDOW}s)."
-                    reset_sink
-                    kill "$snap_pid" 2>/dev/null
-                    break
-                fi
-                ;;
-        esac
-    done <"$fifo"
+                break
+            fi
+        else
+            strikes=0
+        fi
+    done
 
     kill "$snap_pid" 2>/dev/null
     wait "$snap_pid" 2>/dev/null
