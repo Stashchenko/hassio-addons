@@ -54,13 +54,17 @@ A feature-packed Snapserver setup designed for seamless Home Assistant and Music
 
 * **Integrated Web Dashboard:** Includes the built-in [Snapweb](https://github.com/badaix/snapweb) web client directly accessible from your browser or Home Assistant Ingress/Sidebar.
 
-<img src="images/snapweb.png" alt="Snapweb Dashboard" width="100%">
+    <img src="images/snapweb.png" alt="Snapweb Dashboard" width="100%">
 
 * **Music Assistant Ready:** Fully compatible with Music Assistant dynamic audio streams (including default TCP stream auto-discovery).
 
-<img src="images/ma.png" alt="Music Assistant Integration" width="100%">
+    <img src="images/ma.png" alt="Music Assistant Integration" width="100%">
 
 * **mDNS / Avahi Auto-Discovery:** Instant client discovery across your local network (ESP32 `libsnapcast`, Android, Linux, Snapclient).
+
+* Equalizer for pulse audio is included, allowing you to tune the local DAC output without affecting other clients.
+
+    <img src="images/eq.png" alt="EQ Dashboard" width="100%">
 
 ---
 

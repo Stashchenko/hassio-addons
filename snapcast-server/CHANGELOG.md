@@ -1,3 +1,13 @@
+## 0.0.9
+
+- Pinned explicitly installed Alpine package versions in the Dockerfile to avoid unexpected dependency upgrades during
+  rebuilds.
+- Updated Snapcast client startup to route the main client through the local PulseAudio equalizer when EQ is enabled,
+  while keeping EQ-disabled playback on the host PulseAudio server.
+- Updated extra client routing to use the host PulseAudio server and configured `PULSE_SINK`, bypassing the equalizer so
+  additional outputs remain independent of the local EQ.
+- Improved sink handling in the run script to distinguish the host PulseAudio server from the local equalizer server.
+
 ## 0.0.8
 
 - New equalizer web tuner for local client: a 10-band equalizer. The equalizer is applied to the local snapcast client

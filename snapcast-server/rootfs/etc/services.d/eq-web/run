@@ -1,9 +1,6 @@
 #!/command/with-contenv bashio
-port=1706
-if bashio::config.has_value 'eq_web_port'; then
-    port=$(bashio::config 'eq_web_port')
-fi
 
-bashio::log.info "Starting equalizer web tuner on port ${port}..."
-export EQ_WEB_PORT=${port}
+export EQ_WEB_PORT=1706
+
+bashio::log.info "Starting equalizer web tuner on port ${EQ_WEB_PORT}..."
 exec /usr/web/run.sh

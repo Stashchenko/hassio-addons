@@ -34,6 +34,21 @@ Playback and source management are handled by Music Assistant.
 ## Snapcast
 
 Snapcast synchronizes audio playback between connected Snapcast clients, allowing multiple devices to play the same audio stream in sync.
+A feature-packed Snapserver setup designed for seamless Home Assistant and Music Assistant integration.
+
+* **Integrated Web Dashboard:** Includes the built-in [Snapweb](https://github.com/badaix/snapweb) web client directly accessible from your browser or Home Assistant Ingress/Sidebar.
+
+    <img src="https://raw.githubusercontent.com/Stashchenko/hassio-addons/main/images/snapweb.png" alt="Snapweb Dashboard" width="100%">
+
+* **Music Assistant Ready:** Fully compatible with Music Assistant dynamic audio streams (including default TCP stream auto-discovery).
+
+    <img src="https://raw.githubusercontent.com/Stashchenko/hassio-addons/main/images/ma.png" alt="Music Assistant Integration" width="100%">
+
+* **mDNS / Avahi Auto-Discovery:** Instant client discovery across your local network (ESP32 `libsnapcast`, Android, Linux, Snapclient).
+
+* Equalizer for pulse audio is included, allowing you to tune the local DAC output without affecting other clients.
+
+    <img src="https://raw.githubusercontent.com/Stashchenko/hassio-addons/main/images/eq.png" alt="EQ Dashboard" width="100%">
 
 For more information, see the [Snapcast documentation](https://github.com/snapcast/snapcast).
 
